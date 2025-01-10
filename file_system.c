@@ -4,7 +4,8 @@
 #include <string.h>
 #include <stdbool.h>
 
-void initializeMemory(FileSystem* fs) {
+void initializeMemory(FileSystem *fs)
+{
     // Clean up existing memory if any
     clearMemory(fs);
 
@@ -14,18 +15,20 @@ void initializeMemory(FileSystem* fs) {
     scanf("%d", &fs->blockSize);
 
     // Allocate memory
-    fs->secondaryMemory = (Block*)malloc(fs->totalBlocks * sizeof(Block));
-    fs->blockAllocationTable = (bool*)calloc(fs->totalBlocks, sizeof(bool));
-    fs->fileMetadata = (Metadata*)malloc(MAX_FILES * sizeof(Metadata));
+    fs->secondaryMemory = (Block *)malloc(fs->totalBlocks * sizeof(Block));
+    fs->blockAllocationTable = (bool *)calloc(fs->totalBlocks, sizeof(bool));
+    fs->fileMetadata = (Metadata *)malloc(MAX_FILES * sizeof(Metadata));
 
     // Initialize structures
-    for (int i = 0; i < fs->totalBlocks; i++) {
-        fs->secondaryMemory[i].records = (Record*)malloc(fs->blockSize * sizeof(Record));
+    for (int i = 0; i < fs->totalBlocks; i++)
+    {
+        fs->secondaryMemory[i].records = (Record *)malloc(fs->blockSize * sizeof(Record));
         fs->secondaryMemory[i].maxRecords = fs->blockSize;
         initializeBlock(fs, i);
     }
 
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (int i = 0; i < MAX_FILES; i++)
+    {
         fs->fileMetadata[i].isActive = false;
     }
 
@@ -33,8 +36,10 @@ void initializeMemory(FileSystem* fs) {
     printf("Memory initialized successfully!\n");
 }
 
-void initializeBlock(FileSystem* fs, int blockIndex) {
-    for (int i = 0; i < fs->secondaryMemory[blockIndex].maxRecords; i++) {
+void initializeBlock(FileSystem *fs, int blockIndex)
+{
+    for (int i = 0; i < fs->secondaryMemory[blockIndex].maxRecords; i++)
+    {
         fs->secondaryMemory[blockIndex].records[i].id = -1;
         fs->secondaryMemory[blockIndex].records[i].isDeleted = false;
         strcpy(fs->secondaryMemory[blockIndex].records[i].data, "");
@@ -44,13 +49,16 @@ void initializeBlock(FileSystem* fs, int blockIndex) {
     strcpy(fs->secondaryMemory[blockIndex].filename, "");
 }
 
-void createFile(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void createFile(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized. Please initialize memory first.\n");
         return;
     }
 
-    if (fs->numFiles >= MAX_FILES) {
+    if (fs->numFiles >= MAX_FILES)
+    {
         printf("Maximum number of files reached!\n");
         return;
     }
@@ -60,7 +68,8 @@ void createFile(FileSystem* fs) {
     scanf("%s", newFile.filename);
 
     // Check if file already exists
-    if (findFile(fs, newFile.filename) != NULL) {
+    if (findFile(fs, newFile.filename) != NULL)
+    {
         printf("File with this name already exists!\n");
         return;
     }
@@ -68,7 +77,8 @@ void createFile(FileSystem* fs) {
     printf("Enter number of records: ");
     scanf("%d", &newFile.numRecords);
 
-    if (newFile.numRecords <= 0) {
+    if (newFile.numRecords <= 0)
+    {
         printf("Number of records must be positive!\n");
         return;
     }
@@ -87,7 +97,8 @@ void createFile(FileSystem* fs) {
 
     // Find free blocks
     int firstBlock = findFreeBlocks(fs, newFile.numBlocks, newFile.globalOrg == CONTIGUOUS);
-    if (firstBlock == -1) {
+    if (firstBlock == -1)
+    {
         printf("Not enough space available!\n");
         return;
     }
@@ -100,21 +111,27 @@ void createFile(FileSystem* fs) {
 
     // Initialize blocks for the file
     int currentBlock = firstBlock;
-    for (int i = 0; i < newFile.numBlocks; i++) {
+    for (int i = 0; i < newFile.numBlocks; i++)
+    {
         fs->blockAllocationTable[currentBlock] = true;
         strcpy(fs->secondaryMemory[currentBlock].filename, newFile.filename);
 
-        if (newFile.globalOrg == CHAINED && i < newFile.numBlocks - 1) {
+        if (newFile.globalOrg == CHAINED && i < newFile.numBlocks - 1)
+        {
             // For chained organization, find next free block
             int nextBlock = findFreeBlocks(fs, 1, false);
-            if (nextBlock == -1) {
+            if (nextBlock == -1)
+            {
                 printf("Error: Couldn't allocate all blocks!\n");
                 return;
             }
             fs->secondaryMemory[currentBlock].nextBlock = nextBlock;
             currentBlock = nextBlock;
-        } else if (newFile.globalOrg == CONTIGUOUS) {
-            if (i < newFile.numBlocks - 1) {
+        }
+        else if (newFile.globalOrg == CONTIGUOUS)
+        {
+            if (i < newFile.numBlocks - 1)
+            {
                 fs->secondaryMemory[currentBlock].nextBlock = currentBlock + 1;
             }
             currentBlock++;
@@ -124,30 +141,38 @@ void createFile(FileSystem* fs) {
     printf("File created successfully!\n");
 }
 
-void displayMemoryState(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void displayMemoryState(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
 
     printf("\nMemory State (Total Blocks: %d, Block Size: %d records):\n", fs->totalBlocks, fs->blockSize);
     printf("--------------------------------------------------------------------------------\n");
-    for (int i = 0; i < fs->totalBlocks; i++) {
-        if (fs->blockAllocationTable[i]) {
-            printf("%s[%d]%s %s (%d/%d records) -> %d\n", 
+    for (int i = 0; i < fs->totalBlocks; i++)
+    {
+        if (fs->blockAllocationTable[i])
+        {
+            printf("%s[%d]%s %s (%d/%d records) -> %d\n",
                    RED, i, RESET,
                    fs->secondaryMemory[i].filename,
                    fs->secondaryMemory[i].numRecords,
                    fs->secondaryMemory[i].maxRecords,
                    fs->secondaryMemory[i].nextBlock);
-        } else {
+        }
+        else
+        {
             printf("%s[%d]%s FREE\n", GREEN, i, RESET);
         }
     }
 }
 
-void displayMetadata(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void displayMetadata(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -157,9 +182,11 @@ void displayMetadata(FileSystem* fs) {
     printf("| Filename             | Blocks  | Records | Active  | First Block    | Global Org     | Internal Org   |\n");
     printf("+----------------------+---------+---------+---------+----------------+----------------+----------------+\n");
 
-    for (int i = 0; i < fs->numFiles; i++) {
-        if (fs->fileMetadata[i].isActive) {
-            Metadata* file = &fs->fileMetadata[i];
+    for (int i = 0; i < fs->numFiles; i++)
+    {
+        if (fs->fileMetadata[i].isActive)
+        {
+            Metadata *file = &fs->fileMetadata[i];
             int activeRecords = countActiveRecordsInFile(fs, file);
 
             printf("| %-20s | %-7d | %-7d | %-7d | %-14d | %-14s | %-14s |\n",
@@ -176,8 +203,10 @@ void displayMetadata(FileSystem* fs) {
     printf("+----------------------+---------+---------+---------+----------------+----------------+----------------+\n");
 }
 
-void searchRecord(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void searchRecord(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -187,14 +216,19 @@ void searchRecord(FileSystem* fs) {
     scanf("%d", &id);
 
     bool found = false;
-    for (int i = 0; i < fs->numFiles; i++) {
-        if (!fs->fileMetadata[i].isActive) continue;
+    for (int i = 0; i < fs->numFiles; i++)
+    {
+        if (!fs->fileMetadata[i].isActive)
+            continue;
 
         int blockIndex = fs->fileMetadata[i].firstBlockAddress;
-        while (blockIndex != -1) {
-            for (int j = 0; j < fs->secondaryMemory[blockIndex].numRecords; j++) {
-                Record* record = &fs->secondaryMemory[blockIndex].records[j];
-                if (record->id == id && !record->isDeleted) {
+        while (blockIndex != -1)
+        {
+            for (int j = 0; j < fs->secondaryMemory[blockIndex].numRecords; j++)
+            {
+                Record *record = &fs->secondaryMemory[blockIndex].records[j];
+                if (record->id == id && !record->isDeleted)
+                {
                     printf("Record found in file: %s\n", fs->fileMetadata[i].filename);
                     printf("  Block: %d, Position: %d\n", blockIndex, j);
                     printf("  ID: %d, Data: %s\n", record->id, record->data);
@@ -206,17 +240,22 @@ void searchRecord(FileSystem* fs) {
         }
     }
 
-    if (!found) {
+    if (!found)
+    {
         printf("Record with ID %d not found in any file.\n", id);
     }
 }
 
-int countActiveRecordsInFile(FileSystem* fs, Metadata* file) {
+int countActiveRecordsInFile(FileSystem *fs, Metadata *file)
+{
     int activeRecords = 0;
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++) {
-            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted) {
+    while (blockIndex != -1)
+    {
+        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++)
+        {
+            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted)
+            {
                 activeRecords++;
             }
         }
@@ -225,36 +264,50 @@ int countActiveRecordsInFile(FileSystem* fs, Metadata* file) {
     return activeRecords;
 }
 
-int findFreeBlocks(FileSystem* fs, int numBlocksNeeded, bool contiguous) {
-    if (contiguous) {
+int findFreeBlocks(FileSystem *fs, int numBlocksNeeded, bool contiguous)
+{
+    if (contiguous)
+    {
         int consecutiveCount = 0;
         int startBlock = -1;
 
-        for (int i = 0; i < fs->totalBlocks; i++) {
-            if (!fs->blockAllocationTable[i]) {
-                if (consecutiveCount == 0) startBlock = i;
+        for (int i = 0; i < fs->totalBlocks; i++)
+        {
+            if (!fs->blockAllocationTable[i])
+            {
+                if (consecutiveCount == 0)
+                    startBlock = i;
                 consecutiveCount++;
 
-                if (consecutiveCount == numBlocksNeeded) {
+                if (consecutiveCount == numBlocksNeeded)
+                {
                     return startBlock;
                 }
-            } else {
+            }
+            else
+            {
                 consecutiveCount = 0;
             }
         }
-    } else {
+    }
+    else
+    {
         // For chained organization, just find first free block
-        for (int i = 0; i < fs->totalBlocks; i++) {
-            if (!fs->blockAllocationTable[i]) return i;
+        for (int i = 0; i < fs->totalBlocks; i++)
+        {
+            if (!fs->blockAllocationTable[i])
+                return i;
         }
     }
 
     return -1;
 }
 
-void copyBlock(FileSystem* fs, int dest, int src) {
+void copyBlock(FileSystem *fs, int dest, int src)
+{
     // Copy all records from source to destination
-    for (int i = 0; i < fs->blockSize; i++) {
+    for (int i = 0; i < fs->blockSize; i++)
+    {
         fs->secondaryMemory[dest].records[i] = fs->secondaryMemory[src].records[i];
     }
 
@@ -265,30 +318,39 @@ void copyBlock(FileSystem* fs, int dest, int src) {
     fs->secondaryMemory[dest].maxRecords = fs->secondaryMemory[src].maxRecords;
 }
 
-Metadata* findFile(FileSystem* fs, const char* filename) {
-    for (int i = 0; i < fs->numFiles; i++) {
-        if (fs->fileMetadata[i].isActive && strcmp(fs->fileMetadata[i].filename, filename) == 0) {
+Metadata *findFile(FileSystem *fs, const char *filename)
+{
+    for (int i = 0; i < fs->numFiles; i++)
+    {
+        if (fs->fileMetadata[i].isActive && strcmp(fs->fileMetadata[i].filename, filename) == 0)
+        {
             return &fs->fileMetadata[i];
         }
     }
     return NULL;
 }
 
-int findNextFreeRecordSlot(Block* block) {
-    for (int i = 0; i < block->maxRecords; i++) {
-        if (block->records[i].id == -1 || block->records[i].isDeleted) {
+int findNextFreeRecordSlot(Block *block)
+{
+    for (int i = 0; i < block->maxRecords; i++)
+    {
+        if (block->records[i].id == -1 || block->records[i].isDeleted)
+        {
             return i;
         }
     }
     return -1;
 }
 
-int calculateRequiredBlocks(int numRecords, int blockSize) {
+int calculateRequiredBlocks(int numRecords, int blockSize)
+{
     return (numRecords + blockSize - 1) / blockSize;
 }
 
-void insertRecord(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void insertRecord(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -297,8 +359,9 @@ void insertRecord(FileSystem* fs) {
     printf("Enter filename: ");
     scanf("%s", filename);
 
-    Metadata* file = findFile(fs, filename);
-    if (!file) {
+    Metadata *file = findFile(fs, filename);
+    if (!file)
+    {
         printf("File not found.\n");
         return;
     }
@@ -312,10 +375,13 @@ void insertRecord(FileSystem* fs) {
 
     // Check if ID already exists
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++) {
-            if (fs->secondaryMemory[blockIndex].records[i].id == newRecord.id && 
-                !fs->secondaryMemory[blockIndex].records[i].isDeleted) {
+    while (blockIndex != -1)
+    {
+        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++)
+        {
+            if (fs->secondaryMemory[blockIndex].records[i].id == newRecord.id &&
+                !fs->secondaryMemory[blockIndex].records[i].isDeleted)
+            {
                 printf("Record with ID %d already exists!\n", newRecord.id);
                 return;
             }
@@ -325,10 +391,13 @@ void insertRecord(FileSystem* fs) {
 
     // Find a block with free space
     blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        if (fs->secondaryMemory[blockIndex].numRecords < fs->blockSize) {
+    while (blockIndex != -1)
+    {
+        if (fs->secondaryMemory[blockIndex].numRecords < fs->blockSize)
+        {
             int slot = findNextFreeRecordSlot(&fs->secondaryMemory[blockIndex]);
-            if (slot != -1) {
+            if (slot != -1)
+            {
                 fs->secondaryMemory[blockIndex].records[slot] = newRecord;
                 fs->secondaryMemory[blockIndex].numRecords++;
                 printf("Record inserted successfully.\n");
@@ -341,8 +410,10 @@ void insertRecord(FileSystem* fs) {
     printf("No space available in existing blocks!\n");
 }
 
-void deleteRecord(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void deleteRecord(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -355,17 +426,21 @@ void deleteRecord(FileSystem* fs) {
     printf("Enter record ID to delete: ");
     scanf("%d", &id);
 
-    Metadata* file = findFile(fs, filename);
-    if (!file) {
+    Metadata *file = findFile(fs, filename);
+    if (!file)
+    {
         printf("File not found.\n");
         return;
     }
 
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++) {
-            if (fs->secondaryMemory[blockIndex].records[i].id == id && 
-                !fs->secondaryMemory[blockIndex].records[i].isDeleted) {
+    while (blockIndex != -1)
+    {
+        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++)
+        {
+            if (fs->secondaryMemory[blockIndex].records[i].id == id &&
+                !fs->secondaryMemory[blockIndex].records[i].isDeleted)
+            {
                 fs->secondaryMemory[blockIndex].records[i].isDeleted = true;
                 file->numRecords--;
                 printf("Record deleted successfully.\n");
@@ -378,8 +453,10 @@ void deleteRecord(FileSystem* fs) {
     printf("Record with ID %d not found.\n", id);
 }
 
-void defragmentFile(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void defragmentFile(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -388,13 +465,15 @@ void defragmentFile(FileSystem* fs) {
     printf("Enter filename to defragment: ");
     scanf("%s", filename);
 
-    Metadata* file = findFile(fs, filename);
-    if (!file) {
+    Metadata *file = findFile(fs, filename);
+    if (!file)
+    {
         printf("File not found.\n");
         return;
     }
 
-    if (file->globalOrg != CHAINED) {
+    if (file->globalOrg != CHAINED)
+    {
         printf("Only chained files can be defragmented.\n");
         return;
     }
@@ -402,9 +481,12 @@ void defragmentFile(FileSystem* fs) {
     // Count active records
     int activeRecords = 0;
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++) {
-            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted) {
+    while (blockIndex != -1)
+    {
+        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++)
+        {
+            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted)
+            {
                 activeRecords++;
             }
         }
@@ -416,20 +498,24 @@ void defragmentFile(FileSystem* fs) {
 
     // Find continuous space
     int newStartBlock = findFreeBlocks(fs, requiredBlocks, true);
-    if (newStartBlock == -1) {
+    if (newStartBlock == -1)
+    {
         printf("Not enough continuous space for defragmentation.\n");
         return;
     }
 
     // Create temporary array for active records
-    Record* tempRecords = (Record*)malloc(activeRecords * sizeof(Record));
+    Record *tempRecords = (Record *)malloc(activeRecords * sizeof(Record));
     int tempIndex = 0;
 
     // Collect all active records
     blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
-        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++) {
-            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted) {
+    while (blockIndex != -1)
+    {
+        for (int i = 0; i < fs->secondaryMemory[blockIndex].numRecords; i++)
+        {
+            if (!fs->secondaryMemory[blockIndex].records[i].isDeleted)
+            {
                 tempRecords[tempIndex++] = fs->secondaryMemory[blockIndex].records[i];
             }
         }
@@ -438,7 +524,8 @@ void defragmentFile(FileSystem* fs) {
 
     // Free old blocks
     blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
+    while (blockIndex != -1)
+    {
         int nextBlock = fs->secondaryMemory[blockIndex].nextBlock;
         fs->blockAllocationTable[blockIndex] = false;
         initializeBlock(fs, blockIndex);
@@ -447,22 +534,27 @@ void defragmentFile(FileSystem* fs) {
 
     // Redistribute records to new blocks
     tempIndex = 0;
-    for (int i = 0; i < requiredBlocks; i++) {
+    for (int i = 0; i < requiredBlocks; i++)
+    {
         int currentBlock = newStartBlock + i;
         fs->blockAllocationTable[currentBlock] = true;
         strcpy(fs->secondaryMemory[currentBlock].filename, file->filename);
         fs->secondaryMemory[currentBlock].numRecords = 0;
 
         // Fill block with records
-        for (int j = 0; j < fs->blockSize && tempIndex < activeRecords; j++) {
+        for (int j = 0; j < fs->blockSize && tempIndex < activeRecords; j++)
+        {
             fs->secondaryMemory[currentBlock].records[j] = tempRecords[tempIndex++];
             fs->secondaryMemory[currentBlock].numRecords++;
         }
 
         // Set next block pointer
-        if (i < requiredBlocks - 1) {
+        if (i < requiredBlocks - 1)
+        {
             fs->secondaryMemory[currentBlock].nextBlock = currentBlock + 1;
-        } else {
+        }
+        else
+        {
             fs->secondaryMemory[currentBlock].nextBlock = -1;
         }
     }
@@ -476,8 +568,10 @@ void defragmentFile(FileSystem* fs) {
     printf("File defragmented successfully.\n");
 }
 
-void deleteFile(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void deleteFile(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -486,15 +580,17 @@ void deleteFile(FileSystem* fs) {
     printf("Enter filename to delete: ");
     scanf("%s", filename);
 
-    Metadata* file = findFile(fs, filename);
-    if (!file) {
+    Metadata *file = findFile(fs, filename);
+    if (!file)
+    {
         printf("File not found.\n");
         return;
     }
 
     // Free all blocks
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
+    while (blockIndex != -1)
+    {
         int nextBlock = fs->secondaryMemory[blockIndex].nextBlock;
         fs->blockAllocationTable[blockIndex] = false;
         initializeBlock(fs, blockIndex);
@@ -506,8 +602,10 @@ void deleteFile(FileSystem* fs) {
     printf("File deleted successfully.\n");
 }
 
-void renameFile(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void renameFile(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
@@ -519,13 +617,15 @@ void renameFile(FileSystem* fs) {
     scanf("%s", newFilename);
 
     // Check if new filename already exists
-    if (findFile(fs, newFilename) != NULL) {
+    if (findFile(fs, newFilename) != NULL)
+    {
         printf("A file with the new name already exists!\n");
         return;
     }
 
-    Metadata* file = findFile(fs, oldFilename);
-    if (!file) {
+    Metadata *file = findFile(fs, oldFilename);
+    if (!file)
+    {
         printf("File not found.\n");
         return;
     }
@@ -535,7 +635,8 @@ void renameFile(FileSystem* fs) {
 
     // Update filename in all blocks
     int blockIndex = file->firstBlockAddress;
-    while (blockIndex != -1) {
+    while (blockIndex != -1)
+    {
         strcpy(fs->secondaryMemory[blockIndex].filename, newFilename);
         blockIndex = fs->secondaryMemory[blockIndex].nextBlock;
     }
@@ -543,39 +644,48 @@ void renameFile(FileSystem* fs) {
     printf("File renamed successfully.\n");
 }
 
-void compactMemory(FileSystem* fs) {
-    if (!fs->secondaryMemory) {
+void compactMemory(FileSystem *fs)
+{
+    if (!fs->secondaryMemory)
+    {
         printf("Memory not initialized.\n");
         return;
     }
 
     // Count total active files and blocks
     int activeFiles = 0;
-    for (int i = 0; i < fs->numFiles; i++) {
-        if (fs->fileMetadata[i].isActive) {
+    for (int i = 0; i < fs->numFiles; i++)
+    {
+        if (fs->fileMetadata[i].isActive)
+        {
             activeFiles++;
         }
     }
 
-    if (activeFiles == 0) {
+    if (activeFiles == 0)
+    {
         printf("No active files to compact.\n");
         return;
     }
 
     // Process each active file
     int nextFreeBlock = 0;
-    for (int i = 0; i < fs->numFiles; i++) {
-        if (!fs->fileMetadata[i].isActive) continue;
+    for (int i = 0; i < fs->numFiles; i++)
+    {
+        if (!fs->fileMetadata[i].isActive)
+            continue;
 
-        Metadata* file = &fs->fileMetadata[i];
+        Metadata *file = &fs->fileMetadata[i];
         int oldFirstBlock = file->firstBlockAddress;
 
         // Move blocks to beginning of memory
         int currentBlock = oldFirstBlock;
         int blocksProcessed = 0;
 
-        while (currentBlock != -1 && blocksProcessed < file->numBlocks) {
-            if (currentBlock != nextFreeBlock) {
+        while (currentBlock != -1 && blocksProcessed < file->numBlocks)
+        {
+            if (currentBlock != nextFreeBlock)
+            {
                 // Copy block to new location
                 copyBlock(fs, nextFreeBlock, currentBlock);
 
@@ -585,9 +695,12 @@ void compactMemory(FileSystem* fs) {
             }
 
             // Update next pointers
-            if (blocksProcessed < file->numBlocks - 1) {
+            if (blocksProcessed < file->numBlocks - 1)
+            {
                 fs->secondaryMemory[nextFreeBlock].nextBlock = nextFreeBlock + 1;
-            } else {
+            }
+            else
+            {
                 fs->secondaryMemory[nextFreeBlock].nextBlock = -1;
             }
 
@@ -598,12 +711,12 @@ void compactMemory(FileSystem* fs) {
         }
 
         // Update file metadata
-        file->firstBlockAddress = oldFirstBlock == nextFreeBlock - blocksProcessed ? 
-                                oldFirstBlock : nextFreeBlock - blocksProcessed;
+        file->firstBlockAddress = oldFirstBlock == nextFreeBlock - blocksProcessed ? oldFirstBlock : nextFreeBlock - blocksProcessed;
     }
 
     // Clear remaining blocks
-    for (int i = nextFreeBlock; i < fs->totalBlocks; i++) {
+    for (int i = nextFreeBlock; i < fs->totalBlocks; i++)
+    {
         fs->blockAllocationTable[i] = false;
         initializeBlock(fs, i);
     }
@@ -611,10 +724,13 @@ void compactMemory(FileSystem* fs) {
     printf("Memory compacted successfully.\n");
 }
 
-void clearMemory(FileSystem* fs) {
-    if (fs->secondaryMemory != NULL) {
+void clearMemory(FileSystem *fs)
+{
+    if (fs->secondaryMemory != NULL)
+    {
         // Free record arrays in each block
-        for (int i = 0; i < fs->totalBlocks; i++) {
+        for (int i = 0; i < fs->totalBlocks; i++)
+        {
             free(fs->secondaryMemory[i].records);
         }
 
@@ -631,8 +747,9 @@ void clearMemory(FileSystem* fs) {
         fs->totalBlocks = 0;
 
         printf("Memory cleared successfully.\n");
-    } else {
+    }
+    else
+    {
         printf("Memory not initialized.\n");
     }
 }
-

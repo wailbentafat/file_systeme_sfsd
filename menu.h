@@ -4,5 +4,4 @@
 void clearScreen();
 void displayMenu();
 
-
 #endif

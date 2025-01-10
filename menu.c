@@ -1,6 +1,7 @@
 #include "file_system.h"
 
-void clearScreen() {
+void clearScreen()
+{
 #ifdef _WIN32
     system("cls");
 #else
@@ -8,7 +9,8 @@ void clearScreen() {
 #endif
 }
 
-void displayMenu() {
+void displayMenu()
+{
     printf("\n=== File Management System Simulator ===\n");
     printf("1. Initialize Memory\n");
     printf("2. Create File\n");
